@@ -254,4 +254,20 @@ if __name__ == "__main__":
     except Exception as e:
         res = {"file": args.video, "error": str(e)}
 
-    print(json.dumps(res, indent=2))
+    try:
+        res = analyze_video(args.video, lower, upper)
+    except Exception as e:
+        res = {"file": args.video, "error": str(e)}
+
+    # --- print only "(Chance of being AI: xx%)" ---
+    percent = None
+    if isinstance(res, dict):
+        if "counterfactual_percent" in res:
+            percent = res["counterfactual_percent"]
+        elif "probability" in res:
+            percent = round(float(res["probability"]) * 100, 2)
+
+    if isinstance(percent, (int, float)):
+        print(f"Chance of being AI: {percent:.2f}%")
+    else:
+        print("(Chance of being AI: N/A%)")

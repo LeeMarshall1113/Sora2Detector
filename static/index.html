@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sora2Detector — Upload & Analyze</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; margin: 2rem; }
+    .card { border: 1px solid #ddd; border-radius: 14px; padding: 1rem 1.25rem; margin-top: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+    .row { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
+    .muted { color: #666; }
+    pre { background: #0a0a0a; color: #eaeaea; padding: 1rem; border-radius: 10px; overflow: auto; }
+    .badge { background: #efefef; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+    .ok { color: #0a7a2a; }
+    .err { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>🔎 Sora2Detector</h1>
+  <p class="muted">Upload an <strong>.mp4</strong>. The server will run all detectors and return a combined summary.</p>
+
+  <div class="card">
+    <form id="form" class="row">
+      <input id="file" type="file" accept="video/mp4" required />
+      <button type="submit">Analyze</button>
+      <span id="status" class="badge">Idle</span>
+    </form>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    const form = document.getElementById('form');
+    const fileInput = document.getElementById('file');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      resultsEl.innerHTML = '';
+      statusEl.textContent = 'Uploading…';
+
+      const fd = new FormData();
+      fd.append('file', file);
+
+      try {
+        const resp = await fetch('/analyze', { method: 'POST', body: fd });
+        if (!resp.ok) throw new Error(await resp.text());
+        statusEl.textContent = 'Processing…';
+        const data = await resp.json();
+
+        statusEl.textContent = 'Done';
+        const { file: filepath, results } = data;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<h3>Results</h3><p class="muted">File: ${filepath}</p>`;
+
+        for (const [name, payload] of Object.entries(results)) {
+          const sec = document.createElement('div');
+          sec.style.marginTop = '1rem';
+          const isErr = /ERROR|TIMEOUT|not found/i.test(payload.short);
+          sec.innerHTML = `
+            <div class="row">
+              <strong>${name}</strong>
+              <span class="badge ${isErr ? 'err' : 'ok'}">${isErr ? 'Issue' : 'OK'}</span>
+            </div>
+            <div class="muted">${payload.short}</div>
+            <details style="margin-top: .5rem;">
+              <summary>Full output</summary>
+              <pre>${escapeHtml(payload.full || '')}</pre>
+            </details>
+          `;
+          card.appendChild(sec);
+        }
+
+        resultsEl.appendChild(card);
+      } catch (err) {
+        statusEl.textContent = 'Error';
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<strong>Upload failed</strong><p class="muted">${err}</p>`;
+        resultsEl.appendChild(card);
+      }
+    });
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>

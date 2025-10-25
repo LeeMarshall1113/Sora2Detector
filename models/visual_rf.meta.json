@@ -1,0 +1,60 @@
+{
+  "features": [
+    "color_mean_320",
+    "color_mean_640",
+    "color_std_320",
+    "color_std_640",
+    "edge_mean_320",
+    "edge_mean_640",
+    "edge_std_320",
+    "edge_std_640",
+    "freq_mean_320",
+    "freq_mean_640",
+    "freq_std_320",
+    "freq_std_640",
+    "lapvar_mean_320",
+    "lapvar_mean_640",
+    "lapvar_std_320",
+    "lapvar_std_640",
+    "noise_mean_320",
+    "noise_mean_640",
+    "noise_std_320",
+    "noise_std_640",
+    "temporal_mean_320",
+    "temporal_mean_640",
+    "temporal_std_320",
+    "temporal_std_640",
+    "texture_mean_320",
+    "texture_mean_640",
+    "texture_std_320",
+    "texture_std_640"
+  ],
+  "scales": [
+    320,
+    640
+  ],
+  "seconds_grid": [
+    0.0,
+    0.8,
+    1.6,
+    2.4,
+    3.2
+  ],
+  "threshold_recommendation": 1.0,
+  "rf_params": {
+    "n_estimators": 800,
+    "max_depth": null,
+    "min_samples_split": 2,
+    "min_samples_leaf": 1,
+    "class_weight": "balanced_subsample",
+    "random_state": 1337,
+    "n_jobs": -1
+  },
+  "calibrated": true,
+  "stats": {
+    "val_auc": 0.9978687127024723,
+    "test_auc": 0.999467178175618,
+    "test_accuracy": 0.9927007299270073,
+    "test_f1": 0.9927007299270073
+  }
+}

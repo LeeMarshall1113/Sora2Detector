@@ -5,19 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sora2Detector — Upload & Analyze</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; margin: 2rem; }
-    .card { border: 1px solid #ddd; border-radius: 14px; padding: 1rem 1.25rem; margin-top: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
-    .row { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
-    .muted { color: #666; }
+    :root {
+      --ok: #0a7a2a;
+      --err: #b00020;
+      --muted: #666;
+      --card-border: #ddd;
+      --shadow: 0 4px 10px rgba(0,0,0,0.06);
+      --bg: #fafafa;
+    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; margin: 2rem; background: #fff; }
+    .card { border: 1px solid var(--card-border); border-radius: 14px; padding: 1rem 1.25rem; margin-top: 1rem; box-shadow: var(--shadow); background: #fff; }
+    .row { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .muted { color: var(--muted); }
     pre { background: #0a0a0a; color: #eaeaea; padding: 1rem; border-radius: 10px; overflow: auto; }
-    .badge { background: #efefef; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.85rem; }
-    .ok { color: #0a7a2a; }
-    .err { color: #b00020; }
+    .badge { border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.95rem; font-weight: 600; }
+    .chip-ai { background: #fde7ea; color: var(--err); border: 1px solid #f3c6cd; }
+    .chip-human { background: #e7f7ec; color: var(--ok); border: 1px solid #bfe8cd; }
+    button { padding: .6rem 1rem; border-radius: 8px; border: 1px solid #bbb; background: var(--bg); cursor: pointer; }
+    button:hover { background: #f0f0f0; }
+    input[type="file"] { padding: .4rem; }
+    .bar { height: 10px; background: #eee; border-radius: 999px; overflow: hidden; margin-top: .5rem; }
+    .bar > div { height: 100%; width: 0; background: #888; transition: width .3s ease; }
+    .bar.ai > div { background: var(--err); }
+    .bar.human > div { background: var(--ok); }
+    .kv { display: grid; grid-template-columns: 140px 1fr; gap: .25rem 1rem; margin-top: .5rem; }
+    .kv div:nth-child(odd){ color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+    th, td { text-align: left; padding: .4rem .25rem; border-bottom: 1px dashed #e6e6e6; font-size: .95rem; }
+    th { color: #333; }
+    td code { color: #333; }
   </style>
 </head>
 <body>
   <h1>🔎 Sora2Detector</h1>
-  <p class="muted">Upload an <strong>.mp4</strong>. The server will run all detectors and return a combined summary.</p>
+  <p class="muted">Upload an <strong>.mp4</strong>. The server runs all detectors and returns per-detector results plus an overall decision.</p>
 
   <div class="card">
     <form id="form" class="row">
@@ -53,44 +74,98 @@
         const data = await resp.json();
 
         statusEl.textContent = 'Done';
-        const { file: filepath, results } = data;
+        const { file: filepath, results, overall_ai } = data;
 
+        // ===== Overall decision banner (mirror Video percentage) =====
+        const decision = (overall_ai && (overall_ai.decision || '')).toString();
+        const reason = (overall_ai && overall_ai.details && overall_ai.details.reason) || '';
+        const pDict = (overall_ai && overall_ai.details && overall_ai.details.p) || {};
+        // Prefer controller-provided integer for Video
+        let videoPct = overall_ai && overall_ai.details ? overall_ai.details.video_pct : null;
+
+        // If controller didn’t provide it, try to parse from the Video 'short' text (e.g., "Chance of being AI: 25.00%")
+        if (videoPct == null && results && results.Video && results.Video.short) {
+          const m = String(results.Video.short).match(/(\d{1,3})\s*%/);
+          if (m) videoPct = parseInt(m[1], 10);
+        }
+        // Keep it within 0..100
+        if (typeof videoPct === 'number') {
+          videoPct = Math.max(0, Math.min(100, videoPct));
+        }
+
+        const isAI = decision.toLowerCase() === 'ai';
+        const fname = filenameOnly(filepath || '');
+
+        const banner = document.createElement('div');
+        banner.className = 'card';
+        banner.style.borderLeft = isAI ? '6px solid var(--err)' : '6px solid var(--ok)';
+
+        const pctText = (typeof videoPct === 'number') ? `${videoPct}%` : '—';
+
+        banner.innerHTML = `
+          <div class="row" style="align-items:flex-start">
+            <div>
+              <h3 style="margin:.15rem 0 .35rem 0">Overall Analysis</h3>
+              <div class="muted">File: <code>${escapeHtml(fname)}</code></div>
+            </div>
+            <span class="badge ${isAI ? 'chip-ai' : 'chip-human'}">${decision || 'Unknown'}</span>
+          </div>
+
+          <div class="kv" style="margin:.25rem 0 .5rem 0">
+            <div>Video Estimate</div><div><strong>${pctText}</strong></div>
+            <div>Reason</div><div>${escapeHtml(reason)}</div>
+          </div>
+
+          ${typeof videoPct === 'number' ? `
+            <div class="bar ${isAI ? 'ai' : 'human'}">
+              <div style="width:${videoPct}%;"></div>
+            </div>
+          ` : ''}
+        `;
+        resultsEl.appendChild(banner);
+
+        // ===== Per-detector results =====
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `<h3>Results</h3><p class="muted">File: ${filepath}</p>`;
+        card.innerHTML = `<h3>Detectors</h3>`;
 
-        for (const [name, payload] of Object.entries(results)) {
+        for (const [name, payload] of Object.entries(results || {})) {
           const sec = document.createElement('div');
           sec.style.marginTop = '1rem';
-          const isErr = /ERROR|TIMEOUT|not found/i.test(payload.short);
+          const short = (payload && payload.short) || '';
+          const full = (payload && payload.full) || '';
+          const isErr = /ERROR|TIMEOUT|not found/i.test(short);
+
           sec.innerHTML = `
             <div class="row">
-              <strong>${name}</strong>
-              <span class="badge ${isErr ? 'err' : 'ok'}">${isErr ? 'Issue' : 'OK'}</span>
+              <strong>${escapeHtml(name)}</strong>
+              <span class="badge ${isErr ? 'chip-ai' : 'chip-human'}">${isErr ? 'Issue' : 'OK'}</span>
             </div>
-            <div class="muted">${payload.short}</div>
+            <div class="muted" style="margin-top:.15rem">${escapeHtml(short)}</div>
             <details style="margin-top: .5rem;">
               <summary>Full output</summary>
-              <pre>${escapeHtml(payload.full || '')}</pre>
+              <pre>${escapeHtml(full)}</pre>
             </details>
           `;
           card.appendChild(sec);
         }
-
         resultsEl.appendChild(card);
+
       } catch (err) {
         statusEl.textContent = 'Error';
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `<strong>Upload failed</strong><p class="muted">${err}</p>`;
+        card.innerHTML = `<strong>Upload failed</strong><p class="muted">${escapeHtml(String(err))}</p>`;
         resultsEl.appendChild(card);
       }
     });
 
+    function filenameOnly(p){ try { return (p || '').split(/[\\/]/).pop(); } catch { return p || ''; } }
     function escapeHtml(s) {
-      return s.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
+      return (s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
     }
   </script>
 </body>

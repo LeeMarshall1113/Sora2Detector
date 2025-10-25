@@ -1,2 +1,262 @@
 # Sora2Detector
-A detector for Sora 2
+---
+
+```markdown
+# 🧠 Sora2Detector — Modular Multi-Modal Video Analysis Framework
+
+**Sora2Detector** is a first-generation framework for *multi-modal, multi-stage video analysis*.  
+It coordinates a sequence of independent detection modules — including metadata extraction, watermark localization, audio feature analysis, and motion-based video evaluation — through a unified orchestration layer and reproducible API.
+
+The system is designed to support **research-grade reproducibility** and **transparent cross-modality evaluation**.  
+Each backend operates as an isolated Python process, producing interpretable outputs that the controller aggregates into a structured summary.  
+This structure enables direct comparison between heterogeneous detection pipelines (e.g., classical OCR vs. CNN-based watermark detectors) without manual integration work.
+
+Sora2Detector combines these design goals:
+- **Modularity:** each detector is an independent Python file with a standard interface.  
+- **Reproducibility:** identical results from command-line or API contexts.  
+- **Transparency:** all stdout/stderr are preserved and viewable through the web interface.  
+- **Scalability:** easily extended to additional modalities (e.g., OCR, NLP, model fingerprinting).  
+
+---
+
+## 📂 Project Structure
+
+```
+
+Sora2Detector/
+├─ api.py                # FastAPI web server (upload + analysis API + static UI)
+├─ controller.py         # Orchestrator that runs all backend detectors
+├─ backend.py            # Metadata analyzer
+├─ backend-2.py          # Watermark detector
+├─ backend-3.py          # Audio classifier
+├─ backend-4.py          # Video/motion detector
+├─ static/
+│  └─ index.html         # Simple upload UI for the browser
+├─ requirements.txt      # Python dependencies
+└─ README.md             # You are here
+
+````
+
+---
+
+## ⚙️ Setup
+
+### 1. Create and activate a virtual environment
+
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+````
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Start the FastAPI server
+
+```bash
+uvicorn api:app --reload --port 8000
+```
+
+Then open [http://localhost:8000](http://localhost:8000) in your browser.
+
+---
+
+## 🌐 Web Interface
+
+Once running, the system serves a clean web UI where you can:
+
+1. Upload an `.mp4` file
+2. Wait for the backend detectors to execute
+3. View concise summaries for each detector
+4. Expand sections for full stdout/stderr logs
+
+If a detector doesn’t produce any output, it automatically returns:
+
+```
+AI
+```
+
+to indicate that no explicit detection was found (useful for distinguishing “silent” models from “errors”).
+
+---
+
+## 🧠 How It Works
+
+### 1. Upload endpoint (`/analyze`)
+
+`api.py` handles incoming uploads via FastAPI:
+
+* Streams `.mp4` files to a temp folder (no large in-memory buffers)
+* Passes the file path to `controller.py`
+* Waits for all detectors to finish
+* Returns structured JSON of all results
+
+### 2. Controller orchestrator
+
+`controller.py` runs each backend sequentially:
+
+```python
+backends = [
+    ("Metadata", "backend.py"),
+    ("Watermark", "backend-2.py"),
+    ("Audio", "backend-3.py"),
+    ("Video", "backend-4.py"),
+]
+```
+
+For each backend:
+
+* Executes `[python backend-x.py <video>]`
+* Captures stdout and stderr
+* Extracts a **short summary** (based on JSON, keywords, or first lines)
+* Returns full output for display
+
+If no output is detected → `"AI"` is shown.
+If a timeout or error occurs → a descriptive message is returned.
+
+### 3. Web frontend (`static/index.html`)
+
+* Uploads videos via `fetch('/analyze', { method: 'POST', body: FormData })`
+* Renders each detector’s result in a neat card UI with expandable logs
+* Uses no frameworks — pure HTML, CSS, and JavaScript for simplicity
+
+---
+
+## 🧩 Example JSON Response
+
+Example returned by `/analyze`:
+
+```json
+{
+  "file": "C:\\videos\\demo.mp4",
+  "results": {
+    "Metadata": {
+      "short": "duration=3.2s, codec=h264",
+      "full": "... full ffprobe output ..."
+    },
+    "Watermark": {
+      "short": "AI",
+      "full": "No visible watermark detected"
+    },
+    "Audio": {
+      "short": "speech: 97% confidence",
+      "full": "... full classifier output ..."
+    },
+    "Video": {
+      "short": "motion score 0.81",
+      "full": "... full detector output ..."
+    }
+  }
+}
+```
+
+---
+
+## 🧰 Customization
+
+### Change timeout per backend
+
+Edit in `controller.py` inside `run_backend()`:
+
+```python
+timeout=120  # seconds
+```
+
+### Add new detectors
+
+Add a new entry in `BACKENDS`:
+
+```python
+("MyNewDetector", "backend-5.py"),
+```
+
+Ensure your script accepts a single video path as its first argument and **prints** or **returns JSON**.
+
+### Backend return guideline
+
+Each backend should **always print one summary line** or JSON object at the end, e.g.:
+
+```python
+print(json.dumps({"summary": "Watermark found (confidence 0.87)"}))
+```
+
+If nothing is printed, the controller will automatically substitute `"AI"`.
+
+---
+
+## ⚡ Command Line Mode
+
+You can run the controller manually (without the web server):
+
+```bash
+python controller.py path/to/video.mp4
+```
+
+You’ll see formatted output like:
+
+```
+=== Sora2Detector Combined Analysis ===
+File: path/to/video.mp4
+
+Metadata: duration=3.2s, codec=h264
+Watermark: AI
+Audio: speech detected
+Video: motion score 0.81
+
+=== End of Analysis ===
+```
+
+---
+
+## 🛡️ Notes
+
+* Default timeout per backend: **120 s**
+* Temporary uploads are deleted automatically after processing
+* Designed for Windows / Linux / macOS
+* Works with Python ≥ 3.10
+
+---
+
+## 🧩 Tech Stack
+
+| Component            | Description                              |
+| -------------------- | ---------------------------------------- |
+| **Python 3.12+**     | Core runtime                             |
+| **FastAPI**          | Web server for uploads and API responses |
+| **Uvicorn**          | ASGI server (hot reload)                 |
+| **HTML + JS**        | Lightweight frontend                     |
+| **subprocess.run()** | Isolated backend execution               |
+| **JSON**             | Common exchange format                   |
+
+---
+
+## 🚀 Future Enhancements
+
+* Parallel backend execution (asyncio or multiprocessing)
+* WebSocket/SSE live streaming of backend logs
+* File result caching
+* User-selectable detectors
+* GPU-accelerated inference pipelines
+
+---
+
+## 🧾 License
+
+This project is provided as-is under the **MIT License**.
+Use, modify, and distribute freely with attribution.
+
+---
+
+### 💡 Maintainer
+
+**Lee Marshall**
+University of Central Florida
+[GitHub](https://github.com/LeeMarshall1113) • [UCF CS '26](https://www.ucf.edu)
+**Aurela Broqi**
+University of Central Florida

@@ -209,9 +209,13 @@ async def request_access(email: str = Form(...), note: str = Form(...)):
 # -------- Main content page --------
 @app.get("/")
 def main_page():
-    return FileResponse(BASE_DIR / "index.html")
+    p = BASE_DIR / "static" / "index.html"
+    if p.exists():
+        return FileResponse(p)
+    return HTMLResponse("<p>static/index.html not found.</p>", status_code=500)
 
 # -------- Serve static files (optional) --------
+BASE_DIR = pathlib.Path(__file__).parent.resolve()
 if (BASE_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 

@@ -7,6 +7,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from fastapi import UploadFile, File, BackgroundTasks
+import shutil
 
 # ==========================================================
 # Configuration
@@ -20,6 +22,13 @@ DATA_DIR = pathlib.Path(os.getenv("DATA_DIR", "./data")).resolve()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 PENDING_FILE = DATA_DIR / "pending.json"
 CODES_FILE = DATA_DIR / "codes.json"
+
+UPLOAD_DIR = DATA_DIR / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+def _save_upload(dst_path: pathlib.Path, src_file):
+    with dst_path.open("wb") as out_file:
+        shutil.copyfileobj(src_file, out_file)
 
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
 
@@ -89,6 +98,45 @@ async def approval_gate(request: Request, call_next):
     if approved and exp > time.time():
         return await call_next(request)
     return RedirectResponse("/access")
+
+
+def _save_upload(dst_path: pathlib.Path, src_file):
+    with dst_path.open("wb") as out_file:
+        shutil.copyfileobj(src_file, out_file)
+
+
+        #upload
+
+@app.post("/upload")
+@app.post("/api/upload")
+async def upload_video(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
+    # basic guard
+    if not file.filename.lower().endswith((".mp4", ".mov", ".mkv", ".webm")):
+        return {"ok": False, "error": "Unsupported file type"}
+
+    # create a unique filename
+    out_name = f"{int(time.time())}_{file.filename}"
+    out_path = UPLOAD_DIR / out_name
+
+    # save file
+    _save_upload(out_path, file.file)
+
+    # If you have a processor, kick it off here
+    # background_tasks.add_task(run_detector, out_path)
+
+    return {"ok": True, "filename": out_name, "path": f"/static/uploads/{out_name}"}
+
+# after mounting /static (keep your existing mount)
+uploads_public = BASE_DIR / "static" / "uploads"
+uploads_public.mkdir(parents=True, exist_ok=True)
+
+# also copy to a public folder so it can be previewed
+def _save_upload(dst_path: pathlib.Path, src_file):
+    with dst_path.open("wb") as out_file:
+        shutil.copyfileobj(src_file, out_file)
+    # mirror into static/uploads for easy preview
+    mirror = uploads_public / dst_path.name
+    shutil.copyfile(dst_path, mirror)
 
 # ==========================================================
 # Routes

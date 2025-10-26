@@ -107,7 +107,7 @@ class ApprovalGate(BaseHTTPMiddleware):
         if path.startswith("/static/") or any(path.startswith(p) for p in OPEN_PATHS):
             return await call_next(request)
 
-        sess = request.session or {}
+        sess = request.scope.get("session") or {}
         ok = sess.get("approved") is True
         exp = sess.get("approved_exp", 0)
         now = int(time.time())

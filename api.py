@@ -5,7 +5,7 @@ api.py — Sora2Detector server (FastAPI + manual approval system)
 import os
 import time
 import secrets
-from fastapi import FastAPI, Form, Depends, Request
+from fastapi import FastAPI, Form, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials

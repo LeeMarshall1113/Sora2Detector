@@ -2,170 +2,412 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sora2Detector — Upload & Analyze</title>
+  <meta http-equiv="x-content-type-options" content="nosniff" />
   <style>
     :root {
-      --ok: #0a7a2a;
-      --err: #b00020;
-      --muted: #666;
-      --card-border: #ddd;
-      --shadow: 0 4px 10px rgba(0,0,0,0.06);
-      --bg: #fafafa;
+      --bg: #0b0f14;            /* page background */
+      --bg-alt: #0f151c;        /* panels */
+      --surface: #121a22;       /* cards */
+      --card: #0f141a;
+      --border: #1e2a35;
+      --text: #e6edf3;
+      --muted: #9db1c1;
+      --line: rgba(255,255,255,.06);
+
+      --primary: #41a0ff;      /* blue */
+      --primary-600: #2d8ce8;
+      --accent: #27d17f;       /* green */
+      --accent-600: #19b46a;
+      --danger: #ff5975;       /* red/pink for errors */
+
+      --shadow-1: 0 8px 24px rgba(0,0,0,.35);
+      --shadow-2: 0 12px 32px rgba(0,0,0,.45);
+      --glow-blue: 0 0 0 2px rgba(65,160,255,.2), 0 0 30px rgba(65,160,255,.15);
+      --glow-green: 0 0 0 2px rgba(39,209,127,.18), 0 0 30px rgba(39,209,127,.12);
+
+      --radius-lg: 14px;
+      --radius-xl: 18px;
     }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; margin: 2rem; background: #fff; }
-    .card { border: 1px solid var(--card-border); border-radius: 14px; padding: 1rem 1.25rem; margin-top: 1rem; box-shadow: var(--shadow); background: #fff; }
-    .row { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; color: var(--text); background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      line-height: 1.5;
+      /* Subtle techy background */
+      background-image:
+        radial-gradient(60rem 60rem at 10% -10%, rgba(65,160,255,.10), transparent 60%),
+        radial-gradient(60rem 60rem at 110% 10%, rgba(39,209,127,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 200px);
+    }
+
+    .container { max-width: 960px; margin: 48px auto; padding: 0 20px; }
+
+    /* Header */
+    .brand { display:flex; align-items:center; gap:.75rem; }
+    .logo {
+      width: 40px; height: 40px; border-radius: 12px; background: 
+        conic-gradient(from 180deg, var(--primary), var(--accent), var(--primary));
+      box-shadow: var(--glow-blue);
+    }
+    .title { font-weight: 700; font-size: clamp(22px, 2vw, 28px); letter-spacing: .2px; }
+    .title-gradient { background: linear-gradient(90deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .subtitle { color: var(--muted); margin-top: 6px; }
+
+    /* Cards */
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.0)), var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 18px 20px; box-shadow: var(--shadow-1); backdrop-filter: saturate(120%) blur(6px); }
+    .card + .card { margin-top: 16px; }
+
+    .row { display:flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
     .muted { color: var(--muted); }
-    pre { background: #0a0a0a; color: #eaeaea; padding: 1rem; border-radius: 10px; overflow: auto; }
-    .badge { border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.95rem; font-weight: 600; }
-    .chip-ai { background: #fde7ea; color: var(--err); border: 1px solid #f3c6cd; }
-    .chip-human { background: #e7f7ec; color: var(--ok); border: 1px solid #bfe8cd; }
-    button { padding: .6rem 1rem; border-radius: 8px; border: 1px solid #bbb; background: var(--bg); cursor: pointer; }
-    button:hover { background: #f0f0f0; }
-    input[type="file"] { padding: .4rem; }
-    .bar { height: 10px; background: #eee; border-radius: 999px; overflow: hidden; margin-top: .5rem; }
-    .bar > div { height: 100%; width: 0; background: #888; transition: width .3s ease; }
-    .bar.ai > div { background: var(--err); }
-    .bar.human > div { background: var(--ok); }
-    .kv { display: grid; grid-template-columns: 140px 1fr; gap: .25rem 1rem; margin-top: .5rem; }
-    .kv div:nth-child(odd){ color: #333; }
-    table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
-    th, td { text-align: left; padding: .4rem .25rem; border-bottom: 1px dashed #e6e6e6; font-size: .95rem; }
-    th { color: #333; }
-    td code { color: #333; }
+
+    /* Inputs */
+    .controls { display:flex; align-items:center; gap:.6rem; flex-wrap: wrap; }
+    input[type="file"] { color: var(--text); }
+    .btn {
+      --btn-bg: #0f1a24; --btn-br: #223241; --btn-tx: var(--text);
+      appearance:none; border:1px solid var(--btn-br); background: var(--btn-bg); color: var(--btn-tx);
+      padding:.65rem 1rem; border-radius: 12px; cursor: pointer; transition: .18s ease transform, .18s ease background, .18s ease border-color, .18s ease box-shadow;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn[disabled] { opacity:.6; cursor:not-allowed; }
+
+    .btn-primary { --btn-bg: linear-gradient(180deg, #132437, #0f1f30); --btn-br:#27415a; }
+    .btn-primary:hover { box-shadow: var(--glow-blue); border-color:#2c76bd; }
+
+    .btn-ghost { --btn-bg: #0d161f; --btn-br:#223241; color:#b8c7d4; }
+    .btn-ghost:hover { border-color:#2b4154; }
+
+    .badge { border-radius: 999px; padding: .35rem .75rem; font-size: .95rem; font-weight: 600; border: 1px solid var(--border); background: #0d1720; color:#9ad6ff; }
+    .badge.ok { background: rgba(39,209,127,.12); color:#7ae3b0; border-color: rgba(39,209,127,.25); box-shadow: var(--glow-green); }
+    .badge.err { background: rgba(255,89,117,.12); color:#ff99ad; border-color: rgba(255,89,117,.22); }
+
+    /* Dropzone */
+    .dropzone { border: 2px dashed #2a3a4a; border-radius: 16px; padding: 14px 16px; transition: background .15s, border-color .15s, box-shadow .2s; background: #0b141c; }
+    .dropzone.dragover { background: rgba(65,160,255,.08); border-color: #3c7bc6; box-shadow: var(--glow-blue); }
+
+    .kv { display:grid; grid-template-columns: 160px 1fr; gap:.35rem 1rem; margin-top:.75rem; }
+    .kv div:nth-child(odd){ color:#b9d5ea; }
+
+    pre { background: #0a1219; color: #d9e7f3; padding: 14px; border-radius: 12px; overflow:auto; border:1px solid #172330; }
+    code { color: #cfe7ff; }
+
+    .bar { height: 12px; background: #0b141c; border-radius: 999px; overflow: hidden; border:1px solid #1a2a39; margin-top:.5rem; }
+    .bar > div { height:100%; width:0; background: linear-gradient(90deg, var(--primary), var(--accent)); box-shadow: 0 0 24px rgba(65,160,255,.35); transition: width .4s ease; }
+
+    .section + .section { border-top: 1px dashed var(--line); margin-top: .9rem; padding-top: .9rem; }
+
+    .copyBtn { --btn-bg:#0e1821; --btn-br:#223241; color:#b4c7d8; border:1px solid var(--btn-br); background:var(--btn-bg); padding:.45rem .75rem; border-radius:10px; cursor:pointer; }
+    .copyBtn:hover { border-color:#2b4154; }
+
+    video.preview { width: 100%; max-height: 240px; border-radius: 12px; border:1px solid var(--border); background:#000; display:none; margin-top:.5rem; }
+
+    .header-card { display:flex; align-items:flex-start; gap: 16px; }
+    .header-card .meta { flex:1; }
+
+    /* Focus styles */
+    :where(input, button, .dropzone):focus-visible { outline: 2px solid rgba(65,160,255,.55); outline-offset: 2px; border-radius: 12px; }
+
+    /* Small helper text */
+    .hint { font-size: .9rem; color: var(--muted); }
   </style>
 </head>
 <body>
-  <h1>🔎 Sora2Detector</h1>
-  <p class="muted">Upload an <strong>.mp4</strong>. The server runs all detectors and returns per-detector results plus an overall decision.</p>
+  <div class="container">
+    <div class="card header-card" style="box-shadow: var(--shadow-2)">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="meta">
+        <div class="title"><span class="title-gradient">Sora2Detector</span></div>
+        <div class="subtitle">Upload an <strong>.mp4</strong>. The server runs detectors and returns per-detector results plus an overall decision.</div>
+      </div>
+      <div><span id="status" class="badge" aria-live="polite">Idle</span></div>
+    </div>
 
-  <div class="card">
-    <form id="form" class="row">
-      <input id="file" type="file" accept="video/mp4" required />
-      <button type="submit">Analyze</button>
-      <span id="status" class="badge">Idle</span>
-    </form>
+    <div class="card">
+      <form id="form" aria-describedby="status" novalidate>
+        <div class="row" style="align-items:flex-start; gap: 1.25rem;">
+          <div class="dropzone" id="dropzone" style="flex:1 1 420px;">
+            <label for="file" class="hint"><strong>Video file</strong></label><br />
+            <input id="file" name="file" type="file" accept="video/mp4" required aria-required="true" />
+            <div class="hint" style="margin-top:.35rem">Max 200 MB • MP4 only • Drag & drop supported</div>
+            <video id="preview" class="preview" controls playsinline></video>
+          </div>
+          <div class="controls">
+            <button id="submitBtn" type="submit" class="btn btn-primary">Analyze</button>
+            <button id="resetBtn" type="button" class="btn btn-ghost">Reset</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div id="results"></div>
   </div>
 
-  <div id="results"></div>
-
   <script>
+    // ------- Elements -------
     const form = document.getElementById('form');
     const fileInput = document.getElementById('file');
     const statusEl = document.getElementById('status');
     const resultsEl = document.getElementById('results');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const dropzone = document.getElementById('dropzone');
+    const preview = document.getElementById('preview');
 
+    // ------- Config -------
+    const MAX_BYTES = 200 * 1024 * 1024; // 200 MB
+    const ACCEPTED_TYPES = ['video/mp4'];
+
+    // ------- Utils -------
+    function setBusy(isBusy, msg) {
+      submitBtn.disabled = isBusy;
+      fileInput.disabled = isBusy;
+      statusEl.textContent = msg || (isBusy ? 'Working…' : 'Idle');
+      if (isBusy && !statusEl.querySelector('.spinner')) {
+        const sp = document.createElement('span');
+        sp.className = 'spinner';
+        sp.style.cssText = 'width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;display:inline-block;margin-left:.5rem;vertical-align:text-bottom;animation:spin .8s linear infinite';
+        const key = document.createElement('style'); key.textContent = '@keyframes spin { to { transform: rotate(360deg); } }'; document.head.appendChild(key);
+        statusEl.appendChild(sp);
+      }
+      if (!isBusy) {
+        const sp = statusEl.querySelector('.spinner');
+        if (sp) sp.remove();
+      }
+    }
+    function filenameOnly(p){ try { return (p || '').split(/[\\\/]/).pop(); } catch { return p || ''; } }
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/\//g, '&#x2F;');
+    }
+    function clamp01(x){ return Math.min(1, Math.max(0, x)); }
+    function isObject(x){ return x && typeof x === 'object' && !Array.isArray(x); }
+
+    // ------- Drag & drop -------
+    ['dragenter','dragover'].forEach(ev =>
+      dropzone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(ev =>
+      dropzone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('dragover'); }));
+    dropzone.addEventListener('drop', e => {
+      const f = e.dataTransfer?.files?.[0];
+      if (f) { fileInput.files = e.dataTransfer.files; handlePreview(f); }
+    });
+
+    // ------- Preview -------
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files?.[0];
+      if (f) handlePreview(f);
+    });
+    function handlePreview(file){
+      if (!ACCEPTED_TYPES.includes(file.type)) { preview.style.display = 'none'; preview.removeAttribute('src'); return; }
+      const url = URL.createObjectURL(file);
+      preview.src = url;
+      preview.style.display = 'block';
+      preview.onloadeddata = () => { URL.revokeObjectURL(url); };
+    }
+
+    // ------- Reset -------
+    resetBtn.addEventListener('click', () => {
+      form.reset();
+      resultsEl.innerHTML = '';
+      statusEl.textContent = 'Idle';
+      preview.style.display = 'none';
+      preview.removeAttribute('src');
+    });
+
+    // ------- Submit -------
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const file = fileInput.files[0];
-      if (!file) return;
+      const file = fileInput.files?.[0];
+      if (!file) { statusEl.textContent = 'Choose a file'; fileInput.focus(); return; }
+
+      // Client-side validation
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        statusEl.textContent = 'Unsupported type (MP4 only).';
+        return;
+      }
+      if (file.size > MAX_BYTES) {
+        statusEl.textContent = `File too large (${(file.size/1024/1024).toFixed(1)} MB). Max 200 MB.`;
+        return;
+      }
 
       resultsEl.innerHTML = '';
-      statusEl.textContent = 'Uploading…';
+      setBusy(true, 'Uploading…');
 
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', file, file.name);
+
+      let data;
+      try {
+        const resp = await fetch('/analyze', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
+        if (!resp.ok) {
+          const text = await resp.text().catch(()=> '');
+          throw new Error(text || `HTTP ${resp.status}`);
+        }
+        statusEl.textContent = 'Processing…';
+        const text = await resp.text();
+        try { data = JSON.parse(text); }
+        catch { throw new Error('Response was not valid JSON.'); }
+      } catch (err) {
+        setBusy(false, 'Error');
+        renderError(`Upload failed: ${String(err && err.message || err)}`);
+        return;
+      }
 
       try {
-        const resp = await fetch('/analyze', { method: 'POST', body: fd });
-        if (!resp.ok) throw new Error(await resp.text());
-        statusEl.textContent = 'Processing…';
-        const data = await resp.json();
+        const filePath = data?.file ?? '';
+        const results = isObject(data?.results) ? data.results : {};
+        const overall_ai = isObject(data?.overall_ai) ? data.overall_ai : null;
 
-        statusEl.textContent = 'Done';
-        const { file: filepath, results, overall_ai } = data;
+        setBusy(false, 'Done');
 
-        // ===== Overall decision banner (mirror Video percentage) =====
-        const decision = (overall_ai && (overall_ai.decision || '')).toString();
-        const reason = (overall_ai && overall_ai.details && overall_ai.details.reason) || '';
-        const pDict = (overall_ai && overall_ai.details && overall_ai.details.p) || {};
-        // Prefer controller-provided integer for Video
-        let videoPct = overall_ai && overall_ai.details ? overall_ai.details.video_pct : null;
+        renderOverall(filePath, overall_ai, results);
+        renderDetectors(results);
+      } catch (err) {
+        setBusy(false, 'Error');
+        renderError(`Render failed: ${String(err)}`);
+      }
+    });
 
-        // If controller didn’t provide it, try to parse from the Video 'short' text (e.g., "Chance of being AI: 25.00%")
-        if (videoPct == null && results && results.Video && results.Video.short) {
-          const m = String(results.Video.short).match(/(\d{1,3})\s*%/);
-          if (m) videoPct = parseInt(m[1], 10);
-        }
-        // Keep it within 0..100
-        if (typeof videoPct === 'number') {
-          videoPct = Math.max(0, Math.min(100, videoPct));
-        }
+    // ------- Rendering -------
+    function renderOverall(filepath, overall_ai, results){
+      const decision = String(overall_ai?.decision ?? overall_ai?.Decision ?? 'Unknown');
+      const reason = overall_ai?.details?.reason ?? overall_ai?.reason ?? '';
+      const pDict = overall_ai?.details?.p ?? {};
+      let videoPct = overall_ai?.details?.video_pct;
 
-        const isAI = decision.toLowerCase() === 'ai';
-        const fname = filenameOnly(filepath || '');
+      if (videoPct == null && results?.Video?.short) {
+        const m = String(results.Video.short).match(/(\d+(?:\.\d+)?)\s*%/);
+        if (m) videoPct = parseFloat(m[1]);
+      }
+      if (typeof videoPct === 'number') {
+        videoPct = Math.max(0, Math.min(100, videoPct));
+      }
 
-        const banner = document.createElement('div');
-        banner.className = 'card';
-        banner.style.borderLeft = isAI ? '6px solid var(--err)' : '6px solid var(--ok)';
+      const isAI = decision.toLowerCase() === 'ai';
+      const fname = filenameOnly(filepath || '');
 
-        const pctText = (typeof videoPct === 'number') ? `${videoPct}%` : '—';
+      const wrap = document.createElement('div');
+      wrap.className = 'card';
+      wrap.style.border = `1px solid ${isAI ? 'rgba(255,89,117,.25)' : 'rgba(39,209,127,.25)'}`;
+      wrap.style.boxShadow = isAI ? '0 0 0 2px rgba(255,89,117,.12)' : '0 0 0 2px rgba(39,209,127,.12)';
 
-        banner.innerHTML = `
-          <div class="row" style="align-items:flex-start">
-            <div>
-              <h3 style="margin:.15rem 0 .35rem 0">Overall Analysis</h3>
-              <div class="muted">File: <code>${escapeHtml(fname)}</code></div>
-            </div>
-            <span class="badge ${isAI ? 'chip-ai' : 'chip-human'}">${decision || 'Unknown'}</span>
+      const pctText = (typeof videoPct === 'number') ? `${videoPct.toFixed(0)}%` : '—';
+
+      wrap.innerHTML = `
+        <div class="row" style="align-items:flex-start">
+          <div>
+            <h3 style="margin:.15rem 0 .35rem 0; font-size:1.15rem">Overall Analysis</h3>
+            <div class="muted">File: <code>${escapeHtml(fname)}</code></div>
           </div>
+          <span class="badge ${isAI ? 'err' : 'ok'}">${escapeHtml(decision)}</span>
+        </div>
 
-          <div class="kv" style="margin:.25rem 0 .5rem 0">
-            <div>Video Estimate</div><div><strong>${pctText}</strong></div>
-            <div>Reason</div><div>${escapeHtml(reason)}</div>
+        <div class="kv" style="margin:.35rem 0 .6rem 0">
+          <div>Video Estimate</div><div><strong>${pctText}</strong></div>
+          <div>Reason</div><div>${escapeHtml(reason || '—')}</div>
+        </div>
+
+        ${typeof videoPct === 'number' ? `
+          <div class="bar" aria-label="AI likelihood bar" role="img">
+            <div style="width:${videoPct}%;"></div>
           </div>
+        ` : ''}
+      `;
 
-          ${typeof videoPct === 'number' ? `
-            <div class="bar ${isAI ? 'ai' : 'human'}">
-              <div style="width:${videoPct}%;"></div>
-            </div>
-          ` : ''}
+      resultsEl.appendChild(wrap);
+
+      if (isObject(pDict) && Object.keys(pDict).length) {
+        const tbl = document.createElement('div');
+        tbl.className = 'card';
+        const rows = Object.entries(pDict)
+          .sort((a,b)=>b[1]-a[1])
+          .map(([k,v]) => `<tr><td><code>${escapeHtml(k)}</code></td><td>${(clamp01(Number(v))*100).toFixed(1)}%</td></tr>`)
+          .join('');
+        tbl.innerHTML = `
+          <h3 style="margin-top:0;font-size:1.05rem">Model Breakdown</h3>
+          <div style="overflow:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr><th style="text-align:left;padding:.4rem .25rem;border-bottom:1px dashed var(--line);color:#b9d5ea">Model</th><th style="text-align:left;padding:.4rem .25rem;border-bottom:1px dashed var(--line);color:#b9d5ea">Probability</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          </div>
         `;
-        resultsEl.appendChild(banner);
+        resultsEl.appendChild(tbl);
+      }
+    }
 
-        // ===== Per-detector results =====
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `<h3>Detectors</h3>`;
+    function renderDetectors(results){
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<h3 style="margin-top:0;font-size:1.05rem">Detectors</h3>`;
 
-        for (const [name, payload] of Object.entries(results || {})) {
-          const sec = document.createElement('div');
-          sec.style.marginTop = '1rem';
-          const short = (payload && payload.short) || '';
-          const full = (payload && payload.full) || '';
-          const isErr = /ERROR|TIMEOUT|not found/i.test(short);
+      const obj = isObject(results) ? results : {};
+      const entries = Object.entries(obj);
+      if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.className = 'muted';
+        empty.textContent = 'No per-detector results found.';
+        card.appendChild(empty);
+      } else {
+        for (const [name, payload] of entries) {
+          const sec = document.createElement('section');
+          sec.className = 'section';
+          const short = payload?.short ?? '';
+          const full = payload?.full ?? '';
+          const isErr = /ERROR|TIMEOUT|not found/i.test(String(short));
 
           sec.innerHTML = `
             <div class="row">
-              <strong>${escapeHtml(name)}</strong>
-              <span class="badge ${isErr ? 'chip-ai' : 'chip-human'}">${isErr ? 'Issue' : 'OK'}</span>
+              <strong style="letter-spacing:.2px">${escapeHtml(name)}</strong>
+              <span class="badge ${isErr ? 'err' : 'ok'}">${isErr ? 'Issue' : 'OK'}</span>
             </div>
-            <div class="muted" style="margin-top:.15rem">${escapeHtml(short)}</div>
-            <details style="margin-top: .5rem;">
+            <div class="muted" style="margin-top:.15rem; white-space:pre-wrap">${escapeHtml(short)}</div>
+            <details style="margin-top:.6rem;">
               <summary>Full output</summary>
               <pre>${escapeHtml(full)}</pre>
+              <div style="margin-top:.5rem">
+                <button type="button" data-copy="${escapeHtml(full)}" class="copyBtn">Copy output</button>
+              </div>
             </details>
           `;
           card.appendChild(sec);
         }
-        resultsEl.appendChild(card);
-
-      } catch (err) {
-        statusEl.textContent = 'Error';
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `<strong>Upload failed</strong><p class="muted">${escapeHtml(String(err))}</p>`;
-        resultsEl.appendChild(card);
       }
-    });
+      resultsEl.appendChild(card);
 
-    function filenameOnly(p){ try { return (p || '').split(/[\\/]/).pop(); } catch { return p || ''; } }
-    function escapeHtml(s) {
-      return (s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      card.querySelectorAll('.copyBtn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const text = btn.getAttribute('data-copy') || '';
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied!';
+            setTimeout(()=> btn.textContent = 'Copy output', 1200);
+          } catch {
+            btn.textContent = 'Copy failed';
+            setTimeout(()=> btn.textContent = 'Copy output', 1200);
+          }
+        });
+      });
+    }
+
+    function renderError(msg){
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.border = '1px solid rgba(255,89,117,.28)';
+      card.style.boxShadow = '0 0 0 2px rgba(255,89,117,.12)';
+      card.innerHTML = `<strong style="color:#ff99ad">Error</strong><p class="muted" style="white-space:pre-wrap">${escapeHtml(msg)}</p>`;
+      resultsEl.appendChild(card);
     }
   </script>
 </body>

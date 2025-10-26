@@ -128,8 +128,9 @@ class ApprovalGate(BaseHTTPMiddleware):
 app = FastAPI(title="Sora2Detector Access Controlled Server")
 
 app.add_middleware(ProxyHeadersMiddleware)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.add_middleware(ApprovalGate)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
 
 # Serve static UI if present
 if os.path.exists("static"):

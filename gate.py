@@ -66,7 +66,7 @@ def consume_code(code: str) -> bool:
     return False
 
 OPEN_PATHS = ("/healthz", "/access", "/access/", "/access/request", "/access/login",
-              "/docs", "/openapi.json")
+              "/docs", "/openapi.json", "/access/request")
 
 class ApprovalGate(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):

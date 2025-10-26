@@ -106,7 +106,13 @@ def access_page():
         <input type="text" name="code" placeholder="Access code" required>
         <button type="submit">Submit</button>
     </form>
+    <hr>
+    <p>Don't have a code?</p>
+    <a href="/access/request">
+        <button type="button">Request Access</button>
+    </a>
     """
+
 
 @app.post("/access/login")
 async def access_login(request: Request, code: str = Form(...)):

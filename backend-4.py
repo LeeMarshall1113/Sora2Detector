@@ -267,7 +267,7 @@ if __name__ == "__main__":
         elif "probability" in res:
             percent = round(float(res["probability"]) * 100, 2)
 
-    if isinstance(percent, (int, float)):
-        print(f"Chance of being AI: {percent:.2f}%")
-    else:
-        print("(Chance of being AI: N/A%)")
+if isinstance(percent, (int, float)):
+    print(f"Chance of being AI: {int(percent)}%")
+else:
+    print("Chance of being AI: N/A%")

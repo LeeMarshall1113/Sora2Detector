@@ -25,7 +25,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASS", "password")
 SESSION_TTL_HOURS = int(os.getenv("SESSION_TTL_HOURS", "48"))
-DATA_DIR = pathlib.Path(os.getenv("DATA_DIR", "/app/data"))
+DATA_DIR = pathlib.Path(os.getenv("DATA_DIR", "./data")).resolve()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 PENDING_FILE = DATA_DIR / "pending.json"

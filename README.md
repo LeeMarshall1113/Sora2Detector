@@ -24,15 +24,25 @@ Sora2Detector combines these design goals:
 ```
 
 Sora2Detector/
+
 ├─ api.py                # FastAPI web server (upload + analysis API + static UI)
-├─ controller.py         # Orchestrator that runs all backend detectors
+
+├─ controller.py         # Orchestrator that runs all backend detector
+
 ├─ backend.py            # Metadata analyzer
+
 ├─ backend-2.py          # Watermark detector
+
 ├─ backend-3.py          # Audio classifier
+
 ├─ backend-4.py          # Video/motion detector
+
 ├─ static/
+
 │  └─ index.html         # Simple upload UI for the browser
+
 ├─ requirements.txt      # Python dependencies
+
 └─ README.md             # You are here
 
 ````

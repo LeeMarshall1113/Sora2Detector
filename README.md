@@ -187,6 +187,10 @@ print(json.dumps({"summary": "Watermark found (confidence 0.87)"}))
 ```
 
 If nothing is printed, the controller will automatically substitute `"AI"`.
+This is due to the fact that the output will print 'not Ai" when it isn't AI
+But when it does detect AI it returns nothing
+This will be fixed in the future but I was under a time constraint at my hackathon
+For all intents and purposes it functions as it ought to, it just has a bandaid
 
 ---
 

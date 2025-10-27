@@ -127,7 +127,7 @@ For each backend:
 * Extracts a **short summary** (based on JSON, keywords, or first lines)
 * Returns full output for display
 
-If no output is detected → `"AI"` is shown.
+Outputs answer based on whether or not it is AI
 If a timeout or error occurs → a descriptive message is returned.
 
 ### 3. Web frontend (`static/index.html`)
@@ -232,8 +232,9 @@ Video: motion score 0.81
 
 * Default timeout per backend: **120 s**
 * Temporary uploads are deleted automatically after processing
-* Designed for Windows / Linux / macOS
-* Works with Python ≥ 3.10
+* Designed for Windows / Linux / macOS (Tested only on windows with
+  AMD hardware, will test other options in future)
+* Works with Python ≥ 3.10 (tested on 3.12 and 3.13)
 
 ---
 
@@ -244,7 +245,7 @@ Video: motion score 0.81
 | **Python 3.12+**     | Core runtime                             |
 | **FastAPI**          | Web server for uploads and API responses |
 | **Uvicorn**          | ASGI server (hot reload)                 |
-| **HTML + JS**        | Lightweight frontend                     |
+| **HTML**             | Lightweight frontend                     |
 | **subprocess.run()** | Isolated backend execution               |
 | **JSON**             | Common exchange format                   |
 
@@ -252,17 +253,21 @@ Video: motion score 0.81
 
 ## 🚀 Future Enhancements
 
-* Parallel backend execution (asyncio or multiprocessing)
-* WebSocket/SSE live streaming of backend logs
-* File result caching
-* User-selectable detectors
-* GPU-accelerated inference pipelines
+* More accurate AI models trained with more data
+* Have a lightweight option availible
+* Make the website function properly
+* Option to select between deifferent video AI detection (IE sora vs Veo 3)
+* Create an Omni detector for 
+* Ensure other hardware is supported (ie Intel and Nvidia
+* Have it work on social media platforms to help seemlessly check for AI
+* Have the way I trained the AI be made open to allow other people do the same
+* 
 
 ---
 
 ## 🧾 License
 
-This project is provided as-is under the **MIT License**.
+This project is provided as-is under the **Apache 2.0**.
 Use, modify, and distribute freely with attribution.
 
 ---
@@ -272,3 +277,4 @@ Use, modify, and distribute freely with attribution.
 **Lee Marshall**
 University of Central Florida
 [GitHub](https://github.com/LeeMarshall1113) • [UCF CS '26](https://www.ucf.edu)
+If you want to help maintain this, let me know and we can talk

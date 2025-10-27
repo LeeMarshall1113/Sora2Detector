@@ -258,5 +258,3 @@ Use, modify, and distribute freely with attribution.
 **Lee Marshall**
 University of Central Florida
 [GitHub](https://github.com/LeeMarshall1113) • [UCF CS '26](https://www.ucf.edu)
-**Aurela Broqi**
-University of Central Florida

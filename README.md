@@ -235,6 +235,7 @@ Video: motion score 0.81
 * Designed for Windows / Linux / macOS (Tested only on windows with
   AMD hardware, will test other options in future)
 * Works with Python ≥ 3.10 (tested on 3.12 and 3.13)
+* Accuracy is estimated to be around 95% has not been tested, could be as low as 85%
 
 ---
 

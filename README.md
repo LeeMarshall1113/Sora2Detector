@@ -274,10 +274,8 @@ https://dagshub.com/datasets/audio/
 ---
 
 ## 🧾 License
-
-This project is provided as-is under the **Mad License 1.0**.
-Use, modify, and distribute freely with attribution for small scale projects.
-Large scale projects ie corporate ventures contact the email listed in the license
+License: MAD License 1.0 — Free for research & small organizations.  
+Commercial use requires a license from Lee Marshall.
 
 ---
 

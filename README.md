@@ -240,9 +240,9 @@ Video: motion score 0.81
 
 Attributtions
 Data collected from 
-https://live.ece.utexas.edu/research/chug/index.html#download 
+UT Austin CHuG project
+the DagsHub Audio Dataset
 Sora2
-https://dagshub.com/datasets/audio/
 ## 🧩 Tech Stack
 
 | Component            | Description                              |

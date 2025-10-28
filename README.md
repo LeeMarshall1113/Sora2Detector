@@ -238,6 +238,11 @@ Video: motion score 0.81
 
 ---
 
+Attributtions
+Data collected from 
+https://live.ece.utexas.edu/research/chug/index.html#download 
+Sora2
+https://dagshub.com/datasets/audio/
 ## 🧩 Tech Stack
 
 | Component            | Description                              |
@@ -270,8 +275,9 @@ Video: motion score 0.81
 
 ## 🧾 License
 
-This project is provided as-is under the **Apache 2.0**.
-Use, modify, and distribute freely with attribution.
+This project is provided as-is under the **Mad License 1.0**.
+Use, modify, and distribute freely with attribution for small scale projects.
+Large scale projects ie corporate ventures contact the email listed in the license
 
 ---
 

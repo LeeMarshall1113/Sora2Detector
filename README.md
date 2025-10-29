@@ -273,10 +273,7 @@ Sora2
 * 
 
 ---
-
-## 🧾 License
-License: MAD License 1.0 — Free for research & small organizations.  
-Commercial use requires a license from Lee Marshall.
+Apache 2.0 license
 
 ---
 

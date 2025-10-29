@@ -1,21 +1,21 @@
-MAD License 1.0
+ARES License 1.0
 
-(Model Authenticity & Detection License)
-Copyright © 2025 [Lee Marshall]
+(Authenticity Recognition & Evaluation System License)
+Copyright © 2025 Lee Marshall
 
 1. Purpose
 
-The MAD License allows open, non-commercial research and personal use of this software while protecting the author’s rights to license it commercially for large-scale or for-profit use.
+The ARES License allows open, non-commercial research and personal use of this software while protecting the author’s rights to license it commercially for large-scale or for-profit use.
 
 2. Definitions
 
-Software – all source code, models, weights, and documentation contained in this repository.
+Software – all source code, models, datasets, weights, and documentation contained in this repository.
 
 Non-Commercial Use – personal, educational, academic, or research use that does not generate direct revenue.
 
-Commercial Use – any use by an organization whose annual gross revenue exceeds USD $500 000 or that integrates the Software into a product, service, or platform offered for sale, subscription, or advertising revenue.
+Commercial Use – any use by an organization whose annual gross revenue exceeds USD $500,000, or that integrates the Software into a product, service, or platform offered for sale, subscription, or advertising revenue.
 
-Small Organization – a business or nonprofit with ≤ 5 employees and ≤ USD $500 000 annual revenue.
+Small Organization – a business or nonprofit with ≤ 5 employees and ≤ USD $500,000 annual revenue.
 
 3. Grant of Rights
 
@@ -25,44 +25,9 @@ Use, copy, modify, and distribute the Software for Non-Commercial Use;
 
 Publish research or derivative works based on the Software, provided proper attribution is given to the original author;
 
-Incorporate portions of the Software in academic papers or demonstrations.
+Incorporate portions of the Software in academic papers, demonstrations, or teaching materials.
 
 4. Commercial Use
 
-Commercial Use requires a separate written license from [Your Company].
-Contact <leemarshall1113@[gmail].com> for terms.
-Unauthorized Commercial Use constitutes infringement of this license and any applicable patents.
-
-5. Patent Notice
-
-The author retains all patent rights associated with the underlying inventions.
-This license does not grant a patent license for Commercial Use.
-A limited, royalty-free patent license is granted only for Non-Commercial Use of the Software as distributed.
-
-6. Attribution
-
-When publicly using or displaying results derived from the Software, you must credit:
-
-“Powered by MAD Detector – © 2025 [Your Company]”
-
-7. Disclaimer
-
-THE SOFTWARE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND.
-THE AUTHOR DISCLAIMS ALL LIABILITY FOR ANY DAMAGES ARISING FROM USE OF THE SOFTWARE.
-
-8. License Compatibility
-
-This license is compatible with Apache 2.0 for code integration under Non-Commercial Use.
-Derived works may include Apache 2.0 or other OSI-approved components, provided this MAD License remains attached and governs the resulting software.
-
-9. Termination
-
-If you breach any term of this license, your rights under it terminate automatically.
-Commercial Use without an approved license constitutes breach.
-
-Commercial License Option
-
-Organizations may obtain a commercial license granting:
-Right to integrate and monetize MAD Detector in products or services;
-Access to enterprise-grade updates, support, and benchmarking datasets.
-Contact <leemarshall1113@gmail.com> for pricing and agreements.
+Commercial Use requires a separate written license from the author.
+Contact leemarshall1113@gmail.com

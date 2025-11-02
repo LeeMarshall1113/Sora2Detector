@@ -67,6 +67,56 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## 🛠️ FFmpeg Installation (Required)
+
+This project depends on **FFmpeg** for audio and video processing.
+You must have `ffmpeg` and `ffprobe` accessible in your system **PATH**.
+
+### 🧩 Windows
+
+Option 1 — via **Winget** (recommended):
+
+```powershell
+winget install --id Gyan.FFmpeg.Essentials -e --accept-package-agreements --accept-source-agreements
+```
+
+Option 2 — via **Chocolatey**:
+
+```powershell
+choco install ffmpeg -y
+```
+
+Option 3 — Manual (portable):
+
+1. Download a static build from [https://www.gyan.dev/ffmpeg/builds/](https://www.gyan.dev/ffmpeg/builds/).
+2. Unzip it somewhere (e.g. `C:\ffmpeg\bin\`).
+3. Add that `bin` folder to your **PATH** environment variable.
+
+Then verify:
+
+```powershell
+ffmpeg -version
+ffprobe -version
+```
+
+### 🐧 Linux (Debian / Ubuntu)
+
+```bash
+sudo apt update && sudo apt install ffmpeg -y
+```
+
+### 🍎 macOS (Homebrew)
+
+```bash
+brew install ffmpeg
+```
+
+After installation, rerun your detection script:
+
+```bash
+python backend-3.py "sample.mp4" --detect-audio detect_audio.py --trainer trainer.py
+```
+
 ### 3. Start the FastAPI server
 
 ```bash

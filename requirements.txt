@@ -290,7 +290,7 @@ toml==0.10.2
 toolz==1.0.0
 torch==2.4.1
 torch-directml==0.2.5.dev240914
-torchaudio==2.5.1+cpu
+torchaudio==2.5.1
 torchcodec==0.8.0
 torchvision==0.19.1
 tornado==6.4.2

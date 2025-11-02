@@ -118,6 +118,14 @@
   </style>
 </head>
 <body>
+    <div style="background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08);padding:10px 0;text-align:center;">
+    <span style="color:#9db1c1;font-size:0.95rem;">
+      ⚠️ <strong>Disclaimer:</strong> Sora2Detector results are not guaranteed to be accurate. 
+      Current estimated accuracy under normal conditions is <strong>~92%</strong>. 
+      Always verify results independently.
+    </span>
+  </div>
+
   <div class="container">
     <div class="card header-card" style="box-shadow: var(--shadow-2)">
       <div class="logo" aria-hidden="true"></div>
@@ -409,6 +417,32 @@
       card.innerHTML = `<strong style="color:#ff99ad">Error</strong><p class="muted" style="white-space:pre-wrap">${escapeHtml(msg)}</p>`;
       resultsEl.appendChild(card);
     }
+        // ------- Post-result disclaimer -------
+    function renderPostDisclaimer(){
+      const note = document.createElement('div');
+      note.className = 'card';
+      note.style.marginTop = '1rem';
+      note.style.border = '1px dashed var(--border)';
+      note.style.background = '#0b141c';
+      note.innerHTML = `
+        <p class="muted" style="font-size:.9rem;line-height:1.5;">
+          ⚠️ <strong>Interpretation note:</strong> A reading of 
+          <em>"100% AI"</em> (or near-100%) does not mean the content is guaranteed 
+          artificial. It indicates that the model’s internal confidence exceeded 
+          its <strong>AI classification threshold</strong>. Probabilities represent 
+          model-based estimations, not absolute truth.
+        </p>
+      `;
+      resultsEl.appendChild(note);
+    }
+
+    // Hook into existing rendering flow
+    const oldRenderOverall = renderOverall;
+    renderOverall = function(filepath, overall_ai, results){
+      oldRenderOverall(filepath, overall_ai, results);
+      renderPostDisclaimer();
+    };
+
   </script>
 </body>
 </html>

@@ -311,7 +311,7 @@ Sora2
 
 * More accurate AI models trained with more data
 * Fix the bug with the output of some being blank when it should say ai (high priority bugfix)
-* fix the output of the precentages to be what the ai says (high priority bugfix)
+* Have the option for batch testing
 * Have a lightweight option availible
 * Make the website function properly for hosting
 * Option to select between different video AI detection (IE sora2 vs Veo 3)
@@ -320,7 +320,6 @@ Sora2
 * Have it work on social media platforms to help seemlessly check for AI
 * Have the way I trained the AI be made open to allow other people do the same
 * Deal with potential poison pill of Sora2
-* 
 
 ---
 Apache 2.0 license

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 backend-4.py — visual AI/counterfactual detector (banded decision)
 ------------------------------------------------------------------
@@ -5,9 +6,15 @@ Decision rule (default):
   prob <= 0.45 -> Likely Real
   prob >= 0.55 -> AI / Counterfactual
   otherwise    -> Unknown / Uncertain
+
+Outputs (quiet mode): "Chance of being AI: XX%"
+Exit codes:
+  1 = AI (>= upper)
+  0 = Not AI / Unknown (<= upper)
+  2 = Error
 """
 
-import os, json, argparse, tempfile, subprocess
+import os, json, argparse, tempfile, subprocess, sys, traceback
 from pathlib import Path
 
 import cv2
@@ -15,6 +22,9 @@ import numpy as np
 from joblib import load
 from skimage.metrics import structural_similarity as ssim
 from skimage.feature import graycomatrix, graycoprops
+
+# ====== Debug toggle ======
+DEBUG = True  # set False for production-clean output
 
 # ---------------- Paths ----------------
 MODEL_PATH = Path("models/visual_rf.joblib")
@@ -33,18 +43,29 @@ FEATURE_KEYS = meta.get("features", [])
 CONSISTENCY_STD_THRESHOLD = 0.15
 
 # ---------------- Normalization ----------------
-def normalize_video(input_path: str) -> str:
+def normalize_video(input_path: str, ffmpeg_exe: str | None = None) -> str:
     inp = Path(input_path)
     tmp_dir = Path(tempfile.gettempdir())
     out = tmp_dir / f"norm_{inp.stem}.mp4"
+
+    exe = ffmpeg_exe or os.environ.get("FFMPEG_EXE") or "ffmpeg"
     cmd = [
-        "ffmpeg","-y","-i",str(inp),
-        "-vf","scale=640:-2,fps=24",
-        "-c:v","libx264","-preset","veryfast","-crf","23",
-        "-c:a","aac","-ar","44100","-ac","2",
-        "-movflags","+faststart", str(out)
+        exe, "-y", "-i", str(inp),
+        "-vf", "scale=640:-2,fps=24",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+        "-c:a", "aac", "-ar", "44100", "-ac", "2",
+        "-movflags", "+faststart",
+        str(out)
     ]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # If debugging, allow stderr to surface; otherwise keep quiet
+    try:
+        if DEBUG:
+            subprocess.run(cmd, check=True)
+        else:
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    except Exception as e:
+        raise RuntimeError(f"Normalization failed (is ffmpeg available?): {e}")
+
     if not out.exists() or out.stat().st_size == 0:
         raise RuntimeError("Normalization failed: output not created.")
     return str(out)
@@ -223,8 +244,8 @@ def _analyze_normalized(norm_path: str, lower_band: float, upper_band: float):
     return out
 
 # ---------------- Public entry: normalize → analyze → cleanup ----------------
-def analyze_video(video_path: str, lower_band: float, upper_band: float):
-    normalized = normalize_video(video_path)
+def analyze_video(video_path: str, lower_band: float, upper_band: float, ffmpeg_exe: str | None = None):
+    normalized = normalize_video(video_path, ffmpeg_exe=ffmpeg_exe)
     try:
         result = _analyze_normalized(normalized, lower_band, upper_band)
     finally:
@@ -233,16 +254,18 @@ def analyze_video(video_path: str, lower_band: float, upper_band: float):
         except Exception:
             pass
     # Report the original file path, not the temp
-    if "file" in result:
+    if isinstance(result, dict) and "file" in result:
         result["file"] = str(Path(video_path))
     return result
 
 # ---------------- CLI ----------------
-if __name__ == "__main__":
+def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video", help="Path to .mp4")
     ap.add_argument("--lower", type=float, default=0.45, help="Real if prob <= lower (default 0.45)")
     ap.add_argument("--upper", type=float, default=0.55, help="AI if prob >= upper (default 0.55)")
+    ap.add_argument("--ffmpeg-exe", help="Path to ffmpeg.exe (overrides PATH / FFMPEG_EXE)")
+    ap.add_argument("--debug-json", action="store_true", help="When DEBUG, print full JSON diagnostics")
     args = ap.parse_args()
 
     # safety: ensure lower < upper
@@ -250,24 +273,43 @@ if __name__ == "__main__":
     upper = max(args.upper, args.lower + 1e-6)
 
     try:
-        res = analyze_video(args.video, lower, upper)
+        res = analyze_video(args.video, lower, upper, ffmpeg_exe=args.ffmpeg_exe)
+        if not isinstance(res, dict):
+            raise RuntimeError("Unexpected result type from analyze_video")
     except Exception as e:
-        res = {"file": args.video, "error": str(e)}
+        if DEBUG:
+            print("❌ Exception occurred:", e)
+            traceback.print_exc()
+        else:
+            print("Chance of being AI: N/A%")
+        sys.exit(2)
 
-    try:
-        res = analyze_video(args.video, lower, upper)
-    except Exception as e:
-        res = {"file": args.video, "error": str(e)}
-
-    # --- print only "(Chance of being AI: xx%)" ---
+    # percent & exit code
     percent = None
-    if isinstance(res, dict):
-        if "counterfactual_percent" in res:
-            percent = res["counterfactual_percent"]
-        elif "probability" in res:
-            percent = round(float(res["probability"]) * 100, 2)
+    if "counterfactual_percent" in res:
+        percent = res["counterfactual_percent"]
+    elif "probability" in res:
+        percent = round(float(res["probability"]) * 100, 2)
 
-if isinstance(percent, (int, float)):
-    print(f"Chance of being AI: {int(percent)}%")
-else:
-    print("Chance of being AI: N/A%")
+    # Quiet print
+    if isinstance(percent, (int, float)):
+        print(f"Chance of being AI: {int(percent)}%")
+    else:
+        print("Chance of being AI: N/A%")
+
+    # Optional diagnostics
+    if DEBUG and args.debug_json:
+        try:
+            print(json.dumps(res, indent=2))
+        except Exception:
+            pass
+
+    # Exit codes: align with backend-3 semantics (1=AI, 0=otherwise)
+    prob = float(res.get("probability", -1.0)) if isinstance(res, dict) else -1.0
+    if prob >= upper:
+        sys.exit(1)  # AI
+    else:
+        sys.exit(0)  # Not AI / Unknown
+
+if __name__ == "__main__":
+    main()

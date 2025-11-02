@@ -310,7 +310,6 @@ Sora2
 ## 🚀 Future Enhancements
 
 * More accurate AI models trained with more data
-* Fix the bug with the output of some being blank when it should say ai (high priority bugfix)
 * Have the option for batch testing
 * Have a lightweight option availible
 * Make the website function properly for hosting

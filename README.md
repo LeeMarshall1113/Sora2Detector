@@ -1,295 +1,462 @@
-# 🧪 Sora2 Batch Tester
-
-**Batch testing harness for Sora2Detector** — runs all detection backends (Metadata, Watermark, Audio, Video) in parallel across a dataset and generates a unified Markdown report with accuracy metrics.
-
-This tool reproduces **frontend decision logic** exactly:
-
-> If **Metadata** or **Watermark** “light up” → **AI**
-> Else → weighted Audio/Video (0.6/0.4) average threshold → **AI / Not AI**
-
-Then automatically maps those binary results into the three evaluation classes:
-
-* **real**
-* **sora-watermark**
-* **sora-no-watermark**
+# Sora2Detector
 
 ---
 
-## 🔧 Features
+```markdown
 
-* ✅ **Exact parity with frontend detection logic**
-* 🧵 Concurrent backend execution with configurable worker count
-* ⏱️ Per-backend **timeout handling and timing metrics**
-* 🧩 Automatic **ground-truth inference** from filenames
-* 📈 Generates **one consolidated Markdown report**
+# 🧠 Sora2Detector — Modular Multi-Modal Video Analysis Framework
 
-  * Per-file predictions and reasons
-  * Backend coverage table
-  * Confusion matrix & per-class metrics
-  * Highlighted errors and empty outputs
-* 📂 Accepts both **folders and single files**
-* 🪶 Portable — single script, no dependencies beyond Python stdlib
+**Sora2Detector** is a first-generation framework for *multi-modal, multi-stage video analysis*.  
 
----
+It coordinates a sequence of independent detection modules — including metadata extraction, watermark localization, audio feature analysis, and motion-based video evaluation — through a unified orchestration layer and reproducible API.
 
-## 🧰 Requirements
+The system is designed to support **research-grade reproducibility** and **transparent cross-modality evaluation**.  
 
-* **Python 3.9+** (tested on 3.12)
-* `backend.py`, `backend-2.py`, `backend-3.py`, and `backend-4.py` located in:
+Each backend operates as an isolated Python process, producing interpretable outputs that the controller aggregates into a structured summary.  
 
-  * The same directory as this script *(default)*, or
-  * A custom path passed via `--backend-dir`.
+This structure enables direct comparison between heterogeneous detection pipelines (e.g., classical OCR vs. CNN-based watermark detectors) without manual integration work.
 
-Each backend should print short summary output (e.g., JSON or a confidence line) that includes probability or detection terms like “detected watermark”, “AI-generated”, or a confidence percentage.
+Sora2Detector combines these design goals:
+
+- **Modularity:** each detector is an independent Python file with a standard interface.  
+
+- **Reproducibility:** identical results from command-line or API contexts.  
+
+- **Transparency:** all stdout/stderr are preserved and viewable through the web interface.  
+
+- **Scalability:** easily extended to additional modalities (e.g., OCR, NLP, model fingerprinting).  
 
 ---
 
-## 🚀 Usage
+## 📂 Project Structure
 
-### Basic example
-
-```bash
-python batch-tester.py --folder "C:\Videos\batch_set" --out "C:\Videos\results" --verbose
 ```
 
-### Specify backends
-
-```bash
-python batch-tester.py \
-  --folder "C:\TestClips\SoraSet1" \
-  --backend-dir "C:\Repos\Sora2Detector" \
-  --out "C:\Results\batch_report.md" \
-  --timeout 150 --workers 6 --verbose
-```
-
-### Run on one file
-
-```bash
-python batch-tester.py --root "C:\Test\real-1.mp4" --out report.md
-```
-
-### Use patterns or custom extensions
-
-```bash
-python batch-tester.py --folder "D:\Data" --pattern "**/*.mp4" --out results
-```
-
----
-
-## 🧩 Filename Convention (Ground Truth)
-
-The tester automatically infers **ground truth (GT)** labels from filenames:
-
-| Example filename          | Inferred GT label   |
-| ------------------------- | ------------------- |
-| `real-1.mp4`              | `real`              |
-| `sora-watermark-1.mp4`    | `sora-watermark`    |
-| `sora-no-watermark-1.mp4` | `sora-no-watermark` |
-
-> Use `--strict-labels` to skip any files that don’t match these patterns.
-
----
-
-## 🧠 Decision Logic
-
-The same as your **web frontend / controller logic**:
-
-```python
-# Stage 1 (short-circuit)
-if Metadata or Watermark "light up":
-    ai_binary = "AI"
-    ai_source = "Metadata" or "Watermark"
-
-# Stage 2 (fallback)
-weighted = (0.6 * Audio + 0.4 * Video)
-if weighted > 0.5:
-    ai_binary = "AI"
-    ai_source = "Weighted"
-else:
-    ai_binary = "Not AI"
-```
-
-Then:
-
-| ai_binary | ai_source            | Final 3-Class Label |
-| --------- | -------------------- | ------------------- |
-| Not AI    | any                  | real                |
-| AI        | Metadata / Watermark | sora-watermark      |
-| AI        | Weighted             | sora-no-watermark   |
-
----
-
-## 📊 Output Report
-
-A single Markdown report with all results is generated at `--out`.
-
-### Example:
-
-```
-# Sora2 Batch Report
-
-- Generated: 2025-11-03 17:00:08
-- Source: C:\Users\leema\Videos\batch_set
-- Threshold: 0.50, Weights: Audio 0.60, Video 0.40
-
-## Backend Coverage
-
-| Backend | OK | TIMEOUT | ERROR | EMPTY_OUTPUT |
-|----------|---:|---:|---:|---:|
-| Metadata | 3 | 0 | 0 | 0 |
-| Watermark | 2 | 0 | 0 | 1 |
-| Audio | 3 | 0 | 0 | 0 |
-| Video | 3 | 0 | 0 | 0 |
-
-## Per-file Results
-
-| File | GT | Pred | AI? | Source | Audio% | Video% | Reason | Runtime (ms) | Correct |
-|------|----|------|-----|---------|---------|---------|---------|---------------|----------|
-| real-1.mp4 | real | real | Not AI | Weighted | 43 | 25 | weighted_avg <= 0.5 | 125460 | ✅ |
-| sora-no-watermark-1.mp4 | sora-no-watermark | sora-no-watermark | AI | Weighted | 95 | 100 | weighted_avg > 0.5 | 120096 | ✅ |
-| sora-watermark-1.mp4 | sora-watermark | sora-no-watermark | AI | Weighted | 97 | 100 | weighted_avg > 0.5 | 108214 | ❌ |
-```
-
----
-
-## 🧪 Backend Integration
-
-Each backend is an independent Python executable. Example minimal `backend.py`:
-
-```python
-import sys, random, json
-
-if __name__ == "__main__":
-    path = sys.argv[1]
-    conf = random.random()
-    result = {
-        "summary": f"confidence: {conf:.2f}",
-        "short": "AI-generated" if conf > 0.5 else "authentic",
-        "confidence": conf,
-    }
-    print(json.dumps(result))
-```
-
-Each backend’s output is parsed using:
-
-* JSON (keys: `summary`, `short`, `confidence`, `result`)
-* or plain text heuristics (`confidence: 0.93`, “AI-generated”, etc.)
-
----
-
-## ⚙️ Command Options
-
-| Flag              | Description                        |
-| ----------------- | ---------------------------------- |
-| `--folder`        | Directory containing video samples |
-| `--root`          | Single file or directory           |
-| `--backend-dir`   | Location of backend scripts        |
-| `--workers`       | Number of concurrent file workers  |
-| `--timeout`       | Max seconds per backend process    |
-| `--pattern`       | Glob (e.g., `**/*.mp4`)            |
-| `--extensions`    | Comma-separated list (`.mp4,.mov`) |
-| `--out`           | Output file or directory           |
-| `--strict-labels` | Skip files without GT              |
-| `--verbose`       | Show per-backend timing logs       |
-
----
-
-## 📈 Accuracy Metrics
-
-At the bottom of the Markdown report:
-
-* **Accuracy:** global (correct / total)
-* **Confusion matrix:** `real`, `sora-watermark`, `sora-no-watermark`
-* **Precision / Recall / F1 / Support** per class
-
-These metrics allow quick regression checks between model updates or backend improvements.
-
----
-
-## 🧱 Project Layout
-
-```
 Sora2Detector/
-│
-├── backend.py
-├── backend-2.py
-├── backend-3.py
-├── backend-4.py
-├── batch-tester.py
-└── reports/
-    └── batch_report.md
+
+├─ api.py                # FastAPI web server (upload + analysis API + static UI)
+├─ controller.py         # Orchestrator that runs all backend detector
+├─ backend.py            # Metadata analyzer
+├─ backend-2.py          # Watermark detector
+├─ backend-3.py          # Audio classifier
+├─ backend-4.py          # Video/motion detector
+├─ static/
+│  └─ index.html         # Simple upload UI for the browser
+├─ requirements.txt      # Python dependencies
+└─ README.md             # You are here
+
+````
+
+---
+
+## ⚙️ Setup
+
+### 1. Create and activate a virtual environment
+
+```bash
+
+python -m venv .venv
+
+# Windows
+
+.venv\Scripts\activate
+
+# macOS / Linux
+
+source .venv/bin/activate
+
+````
+
+### 2. Install dependencies
+
+```bash
+
+pip install -r requirements.txt
+
+```
+
+## 🛠️ FFmpeg Installation (Required)
+
+This project depends on **FFmpeg** for audio and video processing.
+
+You must have `ffmpeg` and `ffprobe` accessible in your system **PATH**.
+
+### 🧩 Windows
+
+Option 1 — via **Winget** (recommended):
+
+```powershell
+
+winget install --id Gyan.FFmpeg.Essentials -e --accept-package-agreements --accept-source-agreements
+
+```
+
+Option 2 — via **Chocolatey**:
+
+```powershell
+
+choco install ffmpeg -y
+
+```
+
+Option 3 — Manual (portable):
+
+1. Download a static build from [https://www.gyan.dev/ffmpeg/builds/](https://www.gyan.dev/ffmpeg/builds/).
+
+2. Unzip it somewhere (e.g. `C:\ffmpeg\bin\`).
+
+3. Add that `bin` folder to your **PATH** environment variable.
+
+Then verify:
+
+```powershell
+
+ffmpeg -version
+
+ffprobe -version
+
+```
+
+### 🐧 Linux (Debian / Ubuntu)
+
+```bash
+
+sudo apt update && sudo apt install ffmpeg -y
+
+```
+
+### 🍎 macOS (Homebrew)
+
+```bash
+
+brew install ffmpeg
+
+```
+
+After installation, rerun your detection script:
+
+```bash
+
+python backend-3.py "sample.mp4" --detect-audio detect_audio.py --trainer trainer.py
+
+```
+
+### 3. Start the FastAPI server
+
+```bash
+
+uvicorn api:app --reload --port 8000
+
+```
+
+Then open [http://localhost:8000](http://localhost:8000) in your browser.
+
+---
+
+## 🌐 Web Interface
+
+Once running, the system serves a clean web UI where you can:
+
+1. Upload an `.mp4` file
+
+2. Wait for the backend detectors to execute
+
+3. View concise summaries for each detector
+
+4. Expand sections for full stdout/stderr logs
+
+If a detector doesn’t produce any output, it automatically returns:
+
+```
+AI
+```
+
+to indicate that no explicit detection was found (useful for distinguishing “silent” models from “errors”).
+
+---
+
+## 🧠 How It Works
+
+### 1. Upload endpoint (`/analyze`)
+
+`api.py` handles incoming uploads via FastAPI:
+
+* Streams `.mp4` files to a temp folder (no large in-memory buffers)
+
+* Passes the file path to `controller.py`
+
+* Waits for all detectors to finish
+
+* Returns structured JSON of all results
+
+### 2. Controller orchestrator
+
+`controller.py` runs each backend sequentially:
+
+```python
+
+backends = [
+
+    ("Metadata", "backend.py"),
+
+    ("Watermark", "backend-2.py"),
+
+    ("Audio", "backend-3.py"),
+
+    ("Video", "backend-4.py"),
+
+]
+
+```
+
+For each backend:
+
+* Executes `[python backend-x.py <video>]`
+
+* Captures stdout and stderr
+
+* Extracts a **short summary** (based on JSON, keywords, or first lines)
+
+* Returns full output for display
+
+Outputs answer based on whether or not it is AI
+
+If a timeout or error occurs → a descriptive message is returned.
+
+### 3. Web frontend (`static/index.html`)
+
+* Uploads videos via `fetch('/analyze', { method: 'POST', body: FormData })`
+
+* Renders each detector’s result in a neat card UI with expandable logs
+
+* Uses no frameworks — pure HTML, CSS, and JavaScript for simplicity
+
+---
+
+## 🧩 Example JSON Response
+
+Example returned by `/analyze`:
+
+```json
+{
+
+  "file": "C:\\videos\\demo.mp4",
+
+  "results": {
+
+    "Metadata": {
+
+      "short": "duration=3.2s, codec=h264",
+
+      "full": "... full ffprobe output ..."
+
+    },
+
+    "Watermark": {
+
+      "short": "AI",
+
+      "full": "No visible watermark detected"
+
+    },
+
+    "Audio": {
+
+      "short": "speech: 97% confidence",
+
+      "full": "... full classifier output ..."
+
+    },
+
+    "Video": {
+
+      "short": "motion score 0.81",
+
+      "full": "... full detector output ..."
+
+    }
+
+  }
+
+}
+
+```
+---
+
+## 🧰 Customization
+
+### Change timeout per backend
+
+Edit in `controller.py` inside `run_backend()`:
+
+```python
+timeout=120  # seconds
+
+```
+### Add new detectors
+
+Add a new entry in `BACKENDS`:
+
+```python
+("MyNewDetector", "backend-5.py"),
+
+```
+
+Ensure your script accepts a single video path as its first argument and **prints** or **returns JSON**.
+
+### Backend return guideline
+
+Each backend should **always print one summary line** or JSON object at the end, e.g.:
+
+```python
+
+print(json.dumps({"summary": "Watermark found (confidence 0.87)"}))
+
+```
+
+If nothing is printed, the controller will automatically substitute `"AI"`.
+
+This is due to the fact that the output will print 'not Ai" when it isn't AI
+
+But when it does detect AI it returns nothing
+
+This will be fixed in the future but I was under a time constraint at my hackathon
+
+For all intents and purposes it functions as it ought to, it just has a bandaid
+
+
+---
+
+## ⚡ Command Line Mode
+
+
+You can run the controller manually (without the web server):
+
+
+```bash
+
+python controller.py path/to/video.mp4
+
+```
+
+You’ll see formatted output like:
+
+
+```
+
+=== Sora2Detector Combined Analysis ===
+
+File: path/to/video.mp4
+
+
+Metadata: duration=3.2s, codec=h264
+
+Watermark: AI
+
+Audio: speech detected
+
+Video: motion score 0.81
+
+
+=== End of Analysis ===
+
 ```
 
 ---
 
-## 🧾 Example Workflow
 
-1. **Prepare dataset**
+## 🛡️ Notes
 
-   ```
-   batch_set/
-   ├── real-1.mp4
-   ├── sora-watermark-1.mp4
-   └── sora-no-watermark-1.mp4
-   ```
 
-2. **Run tester**
+* Default timeout per backend: **120 s**
 
-   ```bash
-   python batch-tester.py --folder batch_set --out results --workers 4 --timeout 120 --verbose
-   ```
+* Temporary uploads are deleted automatically after processing
 
-3. **Inspect output**
+* Designed for Windows / Linux / macOS (Tested only on windows with
 
-   * `results/batch_report.md`
-   * Confusion matrix for quick accuracy comparison
-   * Empty-output warnings to debug backends
+  AMD hardware, will test other options in future)
 
-4. **Refine thresholds / backends**
+* Works with Python ≥ 3.10 (tested on 3.12 and 3.13)
 
-   * Adjust confidence cutoffs inside backends
-   * Rerun test suite to measure consistency
+* Accuracy is estimated to be around 95% has not been tested, could be as low as 85%
+
 
 ---
 
-## 🧩 Future Enhancements
 
-* [ ] CSV/JSON report export (`--out-format csv`)
-* [ ] Aggregated ROC & precision-recall plots
-* [ ] Auto-threshold sweep testing
-* [ ] Web dashboard integration with the frontend
-* [ ] “binary-only” mode (AI/Not AI only)
+Attributtions
+
+Data collected from 
+
+UT Austin CHuG project
+
+the DagsHub Audio Dataset
+
+Sora2
+
+## 🧩 Tech Stack
+
+
+| Component            | Description                              |
+
+| -------------------- | ---------------------------------------- |
+
+| **Python 3.12+**     | Core runtime                             |
+
+| **FastAPI**          | Web server for uploads and API responses |
+
+| **Uvicorn**          | ASGI server (hot reload)                 |
+
+| **HTML**             | Lightweight frontend                     |
+
+| **subprocess.run()** | Isolated backend execution               |
+
+| **JSON**             | Common exchange format                   |
+
+
+---
+
+
+## 🚀 Future Enhancements
+
+
+* More accurate AI models trained with more data
+
+* Fix the bug with the output of some being blank when it should say ai (high priority bugfix)
+
+* Have the option for batch testing
+
+* Have a lightweight option availible
+
+* Make the website function properly for hosting
+
+* Option to select between different video AI detection (IE sora2 vs Veo 3)
+
+* Create an Omni detector for a large variety of ai detectors
+
+* Ensure other hardware is supported (ie Intel and Nvidia)
+
+* Have it work on social media platforms to help seemlessly check for AI
+
+* Have the way I trained the AI be made open to allow other people do the same
+
+* Deal with potential poison pill of Sora2
 
 ---
 
-## 🧑‍💻 Contributing
+Apache 2.0 license
 
-1. Fork the repo and create a branch:
-
-   ```bash
-   git checkout -b feature/new-backend
-   ```
-2. Follow naming convention: `backend-<n>.py`
-3. Implement stdout output (JSON or plain text with a confidence)
-4. Test locally with:
-
-   ```bash
-   python batch-tester.py --folder testset --verbose
-   ```
-5. Submit a PR with backend docstring describing I/O behavior.
 
 ---
 
-## ⚖️ License
-
-Apache 2.0 — freely usable for research, evaluation, and integration into AI detection systems.
-Attribution recommended for derivative detection pipelines.
-
----
 
 ### 💡 Maintainer
 
+
 **Lee Marshall**
+
 University of Central Florida
+
 [GitHub](https://github.com/LeeMarshall1113) • [UCF CS '26](https://www.ucf.edu)
+
 If you want to help maintain this, let me know and we can talk

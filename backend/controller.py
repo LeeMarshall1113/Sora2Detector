@@ -4,10 +4,10 @@ from pathlib import Path
 
 # === Detector Configuration ===
 BACKENDS = [
-    ("Metadata", "backend.py"),     # 1
-    ("Watermark", "backend-2.py"),  # 2
-    ("Audio", "backend-3.py"),      # 3
-    ("Video", "backend-4.py"),      # 4
+    ("Metadata", r"backend\backend.py"),     # 1
+    ("Watermark", r"backend\backend-2.py"),  # 2
+    ("Audio", r"backend\backend-3.py"),      # 3
+    ("Video", r"backend\backend-4.py"),      # 4
 ]
 
 # === Rule Settings ===

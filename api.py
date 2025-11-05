@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from controller import analyze_video_return
+from backend.controller import analyze_video_return
 
 app = FastAPI(title="Sora2Detector API", version="1.0.0")
 

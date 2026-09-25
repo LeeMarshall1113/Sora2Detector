@@ -2,8 +2,6 @@
 
 ---
 
-```markdown
-
 # 🧠 Sora2Detector — Modular Multi-Modal Video Analysis Framework
 
 **Sora2Detector** is a first-generation framework for *multi-modal, multi-stage video analysis*.  
